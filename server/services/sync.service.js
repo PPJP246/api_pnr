@@ -83,12 +83,12 @@ export async function syncPatients() {
     const result = await partnerService.sendPatients(payload);
 
     // 6. handle response
-    await handleResponse(result, ans);
+    await handlePartnerResponse(result, ans);
 
   } catch (err) {
 
     console.log(
-      "POOLING ERROR"
+      "==========POOLING ERROR=========="
     )
 
     console.error(

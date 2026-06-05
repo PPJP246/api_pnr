@@ -21,7 +21,7 @@ export async function getPatients() {
     WHERE an.ward = '04'
       AND r.hospcode = '10690'
       AND an.dchdate IS NOT NULL
-    LIMIT 10
+    LIMIT 12
   `);
 
   return rows;
