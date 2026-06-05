@@ -27,6 +27,8 @@ import {
 
 export async function syncPatients() {
 
+  const startTime = Date.now();
+
   const summary = {
     totalRecords: 0,
     alreadySynced: 0,
@@ -139,6 +141,16 @@ export async function syncPatients() {
 
     console.log(
       "\n========== POLLING SUMMARY =========="
+    );
+
+    const duration =
+      (
+        (Date.now() - startTime)
+        / 1000
+      ).toFixed(2);
+
+    console.log(
+      `Duration         : ${duration}s`
     );
 
     console.log(

@@ -4,7 +4,7 @@ import {
   syncPatients
 } from "../services/sync.service.js";
 
-cron.schedule("* * * * *", async () => {
+  cron.schedule("*/10 * * * *", async () => {
 
     try {
 
