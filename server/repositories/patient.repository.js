@@ -1,3 +1,6 @@
+import hisDb from "../config/hisdb.js";
+
+
 export async function getPatients() {
 
   const [rows] = await hisDb.query(`
@@ -18,7 +21,7 @@ export async function getPatients() {
     WHERE an.ward = '04'
       AND r.hospcode = '10690'
       AND an.dchdate IS NOT NULL
-    LIMIT 1
+    LIMIT 10
   `);
 
   return rows;

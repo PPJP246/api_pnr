@@ -5,7 +5,8 @@ import {
 } from "../repositories/patient.repository.js";
 
 import {
-  getSyncedAnSet
+  getExistingAns,
+  saveHistory
 } from "../repositories/sync.repository.js";
 
 import { 
@@ -27,29 +28,48 @@ import {
 
 export async function syncPatients() {
 
-  const startTime = Date.now();
+  console.log("========== START POLLING ==========");
 
-  console.log("===========START POLLING===========");
   console.log(
-    `Started At: ${formatDateTime()}`
-  );
-  console.log("================================");
+      `Started At: ${formatDateTime()}`
+  )
 
   try {
 
+    // 1. ดึง HIS
     const rows = await getPatients();
 
-    const syncedSet = await getSyncedAnSet();
+    if (!rows.length) {
+      console.log("No data");
+      return;
+    }
 
+    // 2. ดึงที่เคยส่งแล้ว
+    const syncedSet = await getExistingAns();
+
+    // 3. filter กันซ้ำ
     const filteredRows = rows.filter(
       r => !syncedSet.has(r.an)
     );
 
+    const alreadySyncedCount = rows.length - filteredRows.length;
+
     if (!filteredRows.length) {
-      console.log("All records already synced");
+      console.log(
+        `All already synced (${rows.length} records)`
+      );
       return;
     }
 
+    console.log(
+      `Found ${filteredRows.length} new records`
+    );
+
+    console.log(
+      `Already synced: ${alreadySyncedCount}`
+    );
+
+    // 4. build payload
     const payload = buildPayload(
       filteredRows,
       APP_CONFIG.location
@@ -57,33 +77,19 @@ export async function syncPatients() {
 
     const ans = extractAns(filteredRows);
 
-    console.log(
-      `Found ${payload.length} pending records`
-    );
+    console.log(`Sending ${payload.length} records`);
 
-    const result =
-      await partnerService.sendPatients(
-        payload
-      );
+    // 5. ส่ง API
+    const result = await partnerService.sendPatients(payload);
 
-    await handlePartnerResponse(
-      result,
-      ans
-    );
-
-    console.log(
-      JSON.stringify(
-        result.data,
-        null,
-        2
-      )
-    );
+    // 6. handle response
+    await handleResponse(result, ans);
 
   } catch (err) {
 
-    console.error(
-      "POLLING ERROR"
-    );
+    console.log(
+      "POOLING ERROR"
+    )
 
     console.error(
       JSON.stringify(
@@ -96,19 +102,11 @@ export async function syncPatients() {
 
   } finally {
 
-    const duration =
-      ((Date.now() - startTime) / 1000)
-        .toFixed(2);
-
-    console.log("===========END POLLING===========");
-    console.log(
-      `Duration: ${duration} seconds`
-    );
     console.log(
       `Finished At: ${formatDateTime()}`
-    );
-    console.log("================================\n");
-
+    )
+  
+    console.log("========== END POLLING ==========");
   }
 
 }
