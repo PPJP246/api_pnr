@@ -5,14 +5,13 @@ import {
 } from "../repositories/patient.repository.js";
 
 import {
-  getExistingAns,
-  saveHistory
+  getExistingAns
 } from "../repositories/sync.repository.js";
 
-import { 
+import {
   buildPayload,
-  extractAns 
-} from "../utils/partner.util.js"; 
+  extractAns
+} from "../utils/partner.util.js";
 
 import {
   handlePartnerResponse
@@ -28,68 +27,104 @@ import {
 
 export async function syncPatients() {
 
-  console.log("========== START POLLING ==========");
+  const summary = {
+    totalRecords: 0,
+    alreadySynced: 0,
+    pendingToSend: 0,
+    partnerSuccess: 0,
+    partnerFailed: 0,
+    savedToSyncLog: 0
+  };
 
   console.log(
-      `Started At: ${formatDateTime()}`
-  )
+    "\n========== START POLLING =========="
+  );
+
+  console.log(
+    `Started At: ${formatDateTime()}`
+  );
 
   try {
 
-    // 1. ดึง HIS
-    const rows = await getPatients();
+    const rows =
+      await getPatients();
+
+    summary.totalRecords =
+      rows.length;
 
     if (!rows.length) {
-      console.log("No data");
+
+      console.log(
+        "No data found"
+      );
+
       return;
     }
 
-    // 2. ดึงที่เคยส่งแล้ว
-    const syncedSet = await getExistingAns();
+    const syncedSet =
+      await getExistingAns();
 
-    // 3. filter กันซ้ำ
-    const filteredRows = rows.filter(
-      r => !syncedSet.has(r.an)
-    );
+    const filteredRows =
+      rows.filter(
+        row => !syncedSet.has(row.an)
+      );
 
-    const alreadySyncedCount = rows.length - filteredRows.length;
+    summary.alreadySynced =
+      rows.length -
+      filteredRows.length;
+
+    summary.pendingToSend =
+      filteredRows.length;
 
     if (!filteredRows.length) {
+
       console.log(
-        `All already synced (${rows.length} records)`
+        `All already synced (${rows.length})`
       );
+
       return;
     }
 
-    console.log(
-      `Found ${filteredRows.length} new records`
-    );
+    const payload =
+      buildPayload(
+        filteredRows,
+        APP_CONFIG.location
+      );
+
+    const ans =
+      extractAns(
+        filteredRows
+      );
 
     console.log(
-      `Already synced: ${alreadySyncedCount}`
+      `Sending ${payload.length} records`
     );
 
-    // 4. build payload
-    const payload = buildPayload(
-      filteredRows,
-      APP_CONFIG.location
-    );
+    const result =
+      await partnerService.sendPatients(
+        payload
+      );
 
-    const ans = extractAns(filteredRows);
+    const partnerSummary =
+      await handlePartnerResponse(
+        result,
+        ans
+      );
 
-    console.log(`Sending ${payload.length} records`);
+    summary.partnerSuccess =
+      partnerSummary.partnerSuccess;
 
-    // 5. ส่ง API
-    const result = await partnerService.sendPatients(payload);
+    summary.partnerFailed =
+      partnerSummary.partnerFailed;
 
-    // 6. handle response
-    await handlePartnerResponse(result, ans);
+    summary.savedToSyncLog =
+      partnerSummary.savedToSyncLog;
 
   } catch (err) {
 
     console.log(
-      "==========POOLING ERROR=========="
-    )
+      "========== POLLING ERROR =========="
+    );
 
     console.error(
       JSON.stringify(
@@ -103,10 +138,41 @@ export async function syncPatients() {
   } finally {
 
     console.log(
-      `Finished At: ${formatDateTime()}`
-    )
-  
-    console.log("========== END POLLING ==========");
+      "\n========== POLLING SUMMARY =========="
+    );
+
+    console.log(
+      `Total Records    : ${summary.totalRecords}`
+    );
+
+    console.log(
+      `Already Synced   : ${summary.alreadySynced}`
+    );
+
+    console.log(
+      `Pending To Send  : ${summary.pendingToSend}`
+    );
+
+    console.log(
+      `Partner Success  : ${summary.partnerSuccess}`
+    );
+
+    console.log(
+      `Partner Failed   : ${summary.partnerFailed}`
+    );
+
+    console.log(
+      `Saved To SyncLog : ${summary.savedToSyncLog}`
+    );
+
+    console.log(
+      `Finished At      : ${formatDateTime()}`
+    );
+
+    console.log(
+      "========== END POLLING ==========\n"
+    );
+
   }
 
 }

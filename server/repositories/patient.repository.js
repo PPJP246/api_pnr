@@ -1,6 +1,5 @@
 import hisDb from "../config/hisdb.js";
 
-
 export async function getPatients() {
 
   const [rows] = await hisDb.query(`
