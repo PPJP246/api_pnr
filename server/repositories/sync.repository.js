@@ -1,4 +1,4 @@
-import db from "../config/db.js";
+import syncDb from "../config/sync.db.js";
 
 export async function saveHistory(ans) {
 
@@ -6,7 +6,6 @@ export async function saveHistory(ans) {
 
   const values = ans.map(an => [
     an,
-    "SUCCESS",
     new Date()
   ]);
 
@@ -14,7 +13,6 @@ export async function saveHistory(ans) {
       INSERT INTO sync_log
       (
         an,
-        response_status,
         sent_at
       )
       VALUES ?

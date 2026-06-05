@@ -1,0 +1,58 @@
+# Node modules
+node_modules/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage (test)
+coverage/
+
+# Environment variables
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Build output
+dist/
+build/
+
+# Dependency directories (optional)
+jspm_packages/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor folders
+.vscode/
+.idea/
+
+# Optional npm cache
+.npm
+
+# Optional parcel-bundler cache
+.cache/
+
+# Optional next.js build output
+.next/
+
+# Optional Nuxt build output
+.nuxt/
+
+# Optional react native
+.expo/
+
+# dotenv environment files
+.env*.local
