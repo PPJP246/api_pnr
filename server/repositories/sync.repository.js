@@ -1,29 +1,12 @@
 import syncDb from "../config/sync.db.js";
 
-export async function saveHistory(ans) {
+export async function getSyncedAnSet() {
 
-  if (!Array.isArray(ans) || ans.length === 0) {
-    console.log("No AN to save");
-    return;
-  }
+  const [rows] = await syncDb.query(`
+    SELECT an
+    FROM sync_log
+  `);
 
-  const values = ans.map(an => [
-    an,
-    new Date()
-  ]);
-
-  console.log("Inserting to sync_log:", values);
-  console.log("ANS:", ans);
-  console.log("SUCCESS ANS:", successAns);
-  console.log("VALUES:", values);
-
-  await syncDb.query(`
-    INSERT INTO sync_log
-    (
-      an,
-      sent_at
-    )
-    VALUES ?
-  `, [values]);
+  return new Set(rows.map(r => r.an));
 
 }
