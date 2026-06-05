@@ -4,6 +4,10 @@ import {
   getPatients
 } from "../repositories/patient.repository.js";
 
+import {
+  getSyncedAnSet
+} from "../repositories/sync.repository.js";
+
 import { 
   buildPayload,
   extractAns 
@@ -33,27 +37,25 @@ export async function syncPatients() {
 
   try {
 
-    const rows =
-      await getPatients();
+    const rows = await getPatients();
 
-    if (!rows.length) {
+    const syncedSet = await getSyncedAnSet();
 
-      console.log(
-        "No new records found"
-      );
+    const filteredRows = rows.filter(
+      r => !syncedSet.has(r.an)
+    );
 
+    if (!filteredRows.length) {
+      console.log("All records already synced");
       return;
-
     }
 
-    const payload =
-      buildPayload(
-        rows,
-        APP_CONFIG.location
-      );
+    const payload = buildPayload(
+      filteredRows,
+      APP_CONFIG.location
+    );
 
-    const ans =
-      extractAns(rows);
+    const ans = extractAns(filteredRows);
 
     console.log(
       `Found ${payload.length} pending records`
