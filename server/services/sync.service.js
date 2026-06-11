@@ -35,7 +35,8 @@ export async function syncPatients() {
     pendingToSend: 0,
     partnerSuccess: 0,
     partnerFailed: 0,
-    savedToSyncLog: 0
+    savedToSyncLog: 0,
+    errors: []
   };
 
   console.log(
@@ -122,32 +123,57 @@ export async function syncPatients() {
     summary.savedToSyncLog =
       partnerSummary.savedToSyncLog;
 
+    summary.errors =
+      partnerSummary.errors;
+
   } catch (err) {
 
     console.log(
       "========== POLLING ERROR =========="
     );
 
+    const errorData =
+      err.response?.data;
+
     console.error(
       JSON.stringify(
-        err.response?.data ??
+        errorData ??
         err.message,
         null,
         2
       )
     );
 
-  } finally {
+    if (errorData?.summary) {
 
-    console.log(
-      "\n========== POLLING SUMMARY =========="
-    );
+      summary.partnerSuccess =
+        errorData.summary[
+          "บันทึกได้สำเร็จ"
+        ] || 0;
+
+      summary.partnerFailed =
+        errorData.summary[
+          "ผิดพลาด"
+        ] || 0;
+
+      summary.errors =
+        errorData[
+          "รายละเอียดข้อผิดพลาด"
+        ] || [];
+
+    }
+
+  } finally {
 
     const duration =
       (
         (Date.now() - startTime)
         / 1000
       ).toFixed(2);
+
+    console.log(
+      "\n========== POLLING SUMMARY =========="
+    );
 
     console.log(
       `Duration         : ${duration}s`
@@ -176,6 +202,32 @@ export async function syncPatients() {
     console.log(
       `Saved To SyncLog : ${summary.savedToSyncLog}`
     );
+
+    if (summary.errors.length > 0) {
+
+      console.log(
+        "\n========== PARTNER ERRORS =========="
+      );
+
+      for (const item of summary.errors) {
+
+        console.log(
+          item["ข้อมูล"]
+        );
+
+        for (
+          const message of item["รายละเอียด"]
+        ) {
+
+          console.log(
+            `  - ${message}`
+          );
+
+        }
+
+      }
+
+    }
 
     console.log(
       `Finished At      : ${formatDateTime()}`

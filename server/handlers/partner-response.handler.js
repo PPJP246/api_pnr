@@ -14,7 +14,8 @@ export async function handlePartnerResponse(
   const summary = {
     partnerSuccess: 0,
     partnerFailed: 0,
-    savedToSyncLog: 0
+    savedToSyncLog: 0,
+    errors: []
   };
 
   switch (result.status) {
@@ -33,16 +34,19 @@ export async function handlePartnerResponse(
         `Saved ${ans.length} records`
       );
 
-      return summary;
+      break;
     }
 
     case 207: {
 
+      const failedDetails =
+        result.data[
+          "รายละเอียดข้อผิดพลาด"
+        ] || [];
+
       const failedAns =
         extractFailedAns(
-          result.data[
-            "รายละเอียดข้อผิดพลาด"
-          ] || []
+          failedDetails
         );
 
       const successAns =
@@ -64,6 +68,9 @@ export async function handlePartnerResponse(
       summary.savedToSyncLog =
         successAns.length;
 
+      summary.errors =
+        failedDetails;
+
       console.log(
         `Saved ${successAns.length} records`
       );
@@ -72,75 +79,62 @@ export async function handlePartnerResponse(
         `Failed ${failedAns.length} records`
       );
 
-      return summary;
+      break;
     }
 
-    case 400:
+    case 400: {
+
+      const failedDetails =
+        result.data[
+          "รายละเอียดข้อผิดพลาด"
+        ] || [];
 
       summary.partnerFailed =
         ans.length;
 
-      console.error(
-        "Validation Error"
-      );
+      summary.errors =
+        failedDetails;
 
-      console.error(
-        JSON.stringify(
-          result.data,
-          null,
-          2
-        )
-      );
-
-      return summary;
+      break;
+    }
 
     case 401:
-    case 403:
+    case 403: {
 
       summary.partnerFailed =
         ans.length;
 
-      console.error(
-        "Authorization Error"
-      );
+      summary.errors = [
+        {
+          ข้อมูล: "Authorization",
+          รายละเอียด: [
+            "API Key Invalid"
+          ]
+        }
+      ];
 
-      console.error(
-        JSON.stringify(
-          result.data,
-          null,
-          2
-        )
-      );
+      break;
+    }
 
-      return summary;
-
-    case 500:
+    case 500: {
 
       summary.partnerFailed =
         ans.length;
 
-      console.error(
-        "Partner Internal Error"
-      );
+      summary.errors = [
+        {
+          ข้อมูล: "Partner Server",
+          รายละเอียด: [
+            "Internal Server Error"
+          ]
+        }
+      ];
 
-      console.error(
-        JSON.stringify(
-          result.data,
-          null,
-          2
-        )
-      );
-
-      return summary;
-
-    default:
-
-      console.warn(
-        `Unhandled Status : ${result.status}`
-      );
-
-      return summary;
+      break;
+    }
 
   }
+
+  return summary;
 
 }
